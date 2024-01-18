@@ -66,11 +66,11 @@ module gear (
 	hole_diameter   = 3,    //diameter of the hole in the center, in mm
 	twist           = 0,    //teeth rotate this many degrees from bottom of gear to top.  360 makes the gear a screw with each thread going around once
 	teeth_to_hide   = 0,    //number of teeth to delete to make this only a fraction of a circle
-	pressure_angle  = 28,   //Controls how straight or bulged the tooth sides are. In degrees.
+	pressure_angle  = 20,   //Controls how straight or bulged the tooth sides are. In degrees.
 	clearance       = 0.0,  //gap between top of a tooth on one gear and bottom of valley on a meshing gear (in millimeters)
 	backlash        = 0.0,   //gap between two meshing teeth, in the direction along the circumference of the pitch circle
     center = false,   // center gear by z axis
-    $fn = 20   // number of fragments to draw hole cylinder
+    $fn = 100   // number of fragments to draw hole cylinder
 ) {
 	p  = mm_per_tooth * number_of_teeth / PI / 2;  //radius of pitch circle
 	c  = p + mm_per_tooth / PI - clearance;        //radius of outer circle
@@ -140,6 +140,7 @@ module rack (
 //their centers separated by the sum of their pictch_radius.
 function circular_pitch  (mm_per_tooth=3) = mm_per_tooth;                     //tooth density expressed as "circular pitch" in millimeters
 function diametral_pitch (mm_per_tooth=3) = PI / mm_per_tooth;         //tooth density expressed as "diametral pitch" in teeth per millimeter
+
 function module_value    (mm_per_tooth=3) = mm_per_tooth / PI;                //tooth density expressed as "module" or "modulus" in millimeters
 function pitch_radius    (mm_per_tooth=3,number_of_teeth=11) = mm_per_tooth * number_of_teeth / PI / 2;
 function outer_radius    (mm_per_tooth=3,number_of_teeth=11,clearance=0.1)    //The gear fits entirely within a cylinder of this radius.
@@ -149,7 +150,7 @@ function outer_radius    (mm_per_tooth=3,number_of_teeth=11,clearance=0.1)    //
 //example gear train.  
 //Try it with OpenSCAD View/Animate command with 20 steps and 24 FPS.
 //The gears will continue to be rotated to mesh correctly if you change the number of teeth.
-
+$fn = 100;
 n1 = 11; //red gear number of teeth
 n2 = 20; //green gear
 n3 = 5;  //blue gear
@@ -160,15 +161,56 @@ thickness    = 6;
 hole         = 3;
 height       = 12;
 
-d1 =pitch_radius(mm_per_tooth,n1);
+d1  =pitch_radius(mm_per_tooth,n1);
 d12=pitch_radius(mm_per_tooth,n1) + pitch_radius(mm_per_tooth,n2);
 d13=pitch_radius(mm_per_tooth,n1) + pitch_radius(mm_per_tooth,n3);
 d14=pitch_radius(mm_per_tooth,n1) + pitch_radius(mm_per_tooth,n4);
 
-translate([ 0,    0, 0]) rotate([0,0, $t*360/n1])                 color([1.00,0.75,0.75]) gear(mm_per_tooth,n1,thickness,hole);
-translate([ 0,  d12, 0]) rotate([0,0,-($t+n2/2-0*n1+1/2)*360/n2]) color([0.75,1.00,0.75]) gear(mm_per_tooth,n2,thickness,hole,0,108);
-translate([ d13,  0, 0]) rotate([0,0,-($t-n3/4+n1/4+1/2)*360/n3]) color([0.75,0.75,1.00]) gear(mm_per_tooth,n3,thickness,hole);
-translate([-d14,  0, 0]) rotate([0,0,-($t-n4/4-n1/4+1/2-floor(n4/4)-3)*360/n4]) color([1.00,0.75,0.50]) gear(mm_per_tooth,n4,thickness,hole,0,n4-3);
-translate([(-floor(n5/2)-floor(n1/2)+$t+n1/2-1/2)*mm_per_tooth, -d1+0.0, 0]) rotate([0,0,0]) color([0.75,0.75,0.75]) rack(mm_per_tooth,n5,thickness,height);
+//translate([ 0,    0, 0]) rotate([0,0, $t*360/n1])                 color([1.00,0.75,0.75]) gear(mm_per_tooth,n1,thickness,hole);
+//translate([ 0,  d12, 0]) rotate([0,0,-($t+n2/2-0*n1+1/2)*360/n2]) color([0.75,1.00,0.75]) gear(mm_per_tooth,n2,thickness,hole,0,108);
+//translate([ d13,  0, 0]) rotate([0,0,-($t-n3/4+n1/4+1/2)*360/n3]) color([0.75,0.75,1.00]) gear(mm_per_tooth,n3,thickness,hole);
+//translate([-d14,  0, 0]) rotate([0,0,-($t-n4/4-n1/4+1/2-floor(n4/4)-3)*360/n4]) color([1.00,0.75,0.50]) gear(mm_per_tooth,n4,thickness,hole,0,n4-3);
+//translate([(-floor(n5/2)-floor(n1/2)+$t+n1/2-1/2)*mm_per_tooth, -d1+0.0, 0]) rotate([0,0,0]) color([0.75,0.75,0.75]) rack(mm_per_tooth,n5,thickness,height);
+
+module pie_slice(r=3.0,a=30) {
+   intersection() {
+    circle(r=r);
+    square(r);
+    rotate(a-90) square(r);
+  }
+}
+
+side=4;
 
 
+difference() {
+union () {
+difference () {
+
+difference() {
+    translate([-8,-12,-3])  cube(size = [16,24,36], center = false);
+    union() {
+        difference() {
+            rotate([0,0,2*18])gear(PI/**/,10/*teeth*/,15  /*thickness*/,/*hole*/0);
+//            rotate([0,0,180-2*18])linear_extrude(height = 15, center = false)pie_slice(r=6,a=4*18);
+
+        }
+        translate([0,0,15+15/2])cylinder(h=15+1 ,r=6,center=true);
+        translate([0,0,40])cylinder(h=46,r=3,center=true);
+    }
+}
+  translate([0,-12-1/2,-8-1/2])  cube(size = [16+1,24+1,46+1], center = false);
+  translate([0,8,0]) rotate([0,90,0])cylinder(h=46,r=2.5/2,center=true);
+  translate([0,-8,0]) rotate([0,90,0])cylinder(h=46,r=2.5/2,center=true);
+  translate([0,9,30]) rotate([0,90,0])cylinder(h=46,r=2.5/2,center=true);
+  translate([0,-9,30]) rotate([0,90,0])cylinder(h=46,r=2.5/2,center=true);
+  translate([0, 0,25]) rotate([90,0,0])cylinder(h=46,r=3,center=true);
+  translate([-side/2,6+side/2,side+side/2])  cube(size = [side+0.1,4+0.1,4+0.1], center = true);
+  translate([-side/2,-side-side/2-3 ,4*side+side/2])  cube(size = [side+0.1,4+0.1,4+0.1], center = true);
+}
+  translate([side/2,-8,4+4/2])  cube(size = [4,4,4], center = true);
+  translate([side/2,side+side/2+3,4*side+side/2])  cube(size = [4,4,4], center = true);
+}
+rotate([0,0,180-2*18-3*18])linear_extrude(height = 15, center = false)pie_slice(r=6,a=4*18);
+rotate([0,0,180-2*18+3*18])linear_extrude(height = 15, center = false)pie_slice(r=6,a=4*18);
+}

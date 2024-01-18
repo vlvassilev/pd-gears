@@ -1,3 +1,8 @@
+# clock gear jigg
+
+on top of pd-gears
+
+
 # pd-gears
 OpenSCAD involute parametrized gear generator
 
